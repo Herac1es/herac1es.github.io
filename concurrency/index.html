@@ -1,0 +1,407 @@
+<!doctype html><html lang=zh-cn><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=robots content="noodp"><meta http-equiv=x-ua-compatible content="IE=edge, chrome=1"><title>Concurrency Patterns In Go - 马力神的博客</title><meta name=Description content><meta property="og:title" content="Concurrency Patterns In Go"><meta property="og:description" content="什么是并发编程 抛开具体的概念 (相信你已经熟知)，并发 concurrency 是一种设计：
+ 将程序设计成一个包含许多独立过程的集合； 允许这些过程最终可以并行 parallel 地去执行；   尽管 并发 并不要求必须同时运行，例如在单核 CPU 物理机上无法实现并行却可以依靠操作系统时间片轮转等调度来实现并发； 并发是一种操作系统在时间维度的虚拟，即时分复用。
+  代码运行的结果总是相同，无论是以并行还是顺序的方式。  具体要求  通过划分多个独立的任务来将代码以及数据分组 没有竞争条件1 没有死锁2 比常规的程序更有效，即执行更快  Go如何并发  Don&rsquo;t communicate by sharing memory; share memory by communicating. (R. Pike)
+ 不要通过共享内存来通信，这意味着不同的并发实体不应该通过遵守严格、容易出错的内存可见性和同步策略 (比如内存屏障3)来进行通信 (这是可以做到的，但是会让情况变得复杂，而且由于数据竞争会造成不可预期的结果)。
+应该通过通信来共享内存 (数据) : Go 使用了基于 CSP4 (Communicating Sequential Process，通信顺序程序) 的并发模型，goroutine 做为并发通信的实体，通过 channel 来实现数据共享。
+ A send on a channel happens before the corresponding receive from that channel completes."><meta property="og:type" content="article"><meta property="og:url" content="http://example.org/concurrency/"><meta property="og:image" content="http://example.org/logo.png"><meta property="article:section" content="posts"><meta property="article:published_time" content="2021-01-10T23:27:01+08:00"><meta property="article:modified_time" content="2021-01-10T23:27:01+08:00"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content="http://example.org/logo.png"><meta name=twitter:title content="Concurrency Patterns In Go"><meta name=twitter:description content="什么是并发编程 抛开具体的概念 (相信你已经熟知)，并发 concurrency 是一种设计：
+ 将程序设计成一个包含许多独立过程的集合； 允许这些过程最终可以并行 parallel 地去执行；   尽管 并发 并不要求必须同时运行，例如在单核 CPU 物理机上无法实现并行却可以依靠操作系统时间片轮转等调度来实现并发； 并发是一种操作系统在时间维度的虚拟，即时分复用。
+  代码运行的结果总是相同，无论是以并行还是顺序的方式。  具体要求  通过划分多个独立的任务来将代码以及数据分组 没有竞争条件1 没有死锁2 比常规的程序更有效，即执行更快  Go如何并发  Don&rsquo;t communicate by sharing memory; share memory by communicating. (R. Pike)
+ 不要通过共享内存来通信，这意味着不同的并发实体不应该通过遵守严格、容易出错的内存可见性和同步策略 (比如内存屏障3)来进行通信 (这是可以做到的，但是会让情况变得复杂，而且由于数据竞争会造成不可预期的结果)。
+应该通过通信来共享内存 (数据) : Go 使用了基于 CSP4 (Communicating Sequential Process，通信顺序程序) 的并发模型，goroutine 做为并发通信的实体，通过 channel 来实现数据共享。
+ A send on a channel happens before the corresponding receive from that channel completes."><meta name=application-name content="LoveIt"><meta name=apple-mobile-web-app-title content="LoveIt"><meta name=theme-color content="#ffffff"><meta name=msapplication-TileColor content="#da532c"><link rel="shortcut icon" type=image/x-icon href=/favicon.ico><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=mask-icon href=/safari-pinned-tab.svg color=#5bbad5><link rel=manifest href=/site.webmanifest><link rel=canonical href=http://example.org/concurrency/><link rel=stylesheet href=/lib/normalize/normalize.min.css><link rel=stylesheet href=/css/style.min.css><link rel=stylesheet href=/lib/fontawesome-free/all.min.css><link rel=stylesheet href=/lib/animate/animate.min.css><script type=application/ld+json>{"@context":"http://schema.org","@type":"BlogPosting","headline":"Concurrency Patterns In Go","inLanguage":"zh-CN","mainEntityOfPage":{"@type":"WebPage","@id":"http:\/\/example.org\/concurrency\/"},"genre":"posts","wordcount":990,"url":"http:\/\/example.org\/concurrency\/","datePublished":"2021-01-10T23:27:01+08:00","dateModified":"2021-01-10T23:27:01+08:00","publisher":{"@type":"Organization","name":""},"author":{"@type":"Person","name":"马力神"},"description":""}</script></head><body header-desktop=fixed header-mobile=auto><script type=text/javascript>(window.localStorage&&localStorage.getItem('theme')?localStorage.getItem('theme')==='dark':'auto'==='auto'?window.matchMedia('(prefers-color-scheme: dark)').matches:'auto'==='dark')&&document.body.setAttribute('theme','dark')</script><div id=mask></div><div class=wrapper><header class=desktop id=header-desktop><div class=header-wrapper><div class=header-title><a href=/ title=马力神的博客>Hugo</a></div><div class=menu><div class=menu-inner><a class=menu-item href=/posts/>文章 </a><a class=menu-item href=/tags/>标签 </a><a class=menu-item href=/categories/>分类 </a><span class="menu-item delimiter"></span><span class="menu-item search" id=search-desktop><input type=text placeholder=搜索文章标题或内容... id=search-input-desktop>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-desktop title=搜索><i class="fas fa-search fa-fw"></i></a>
+<a href=javascript:void(0); class="search-button search-clear" id=search-clear-desktop title=清空><i class="fas fa-times-circle fa-fw"></i></a>
+<span class="search-button search-loading" id=search-loading-desktop><i class="fas fa-spinner fa-fw fa-spin"></i></span>
+</span><a href=javascript:void(0); class="menu-item theme-switch" title=切换主题><i class="fas fa-adjust fa-fw"></i></a></div></div></div></header><header class=mobile id=header-mobile><div class=header-container><div class=header-wrapper><div class=header-title><a href=/ title=马力神的博客>Hugo</a></div><div class=menu-toggle id=menu-toggle-mobile><span></span><span></span><span></span></div></div><div class=menu id=menu-mobile><div class=search-wrapper><div class="search mobile" id=search-mobile><input type=text placeholder=搜索文章标题或内容... id=search-input-mobile>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-mobile title=搜索><i class="fas fa-search fa-fw"></i></a>
+<a href=javascript:void(0); class="search-button search-clear" id=search-clear-mobile title=清空><i class="fas fa-times-circle fa-fw"></i></a>
+<span class="search-button search-loading" id=search-loading-mobile><i class="fas fa-spinner fa-fw fa-spin"></i></span></div><a href=javascript:void(0); class=search-cancel id=search-cancel-mobile>取消</a></div><a class=menu-item href=/posts/ title>文章</a><a class=menu-item href=/tags/ title>标签</a><a class=menu-item href=/categories/ title>分类</a><a href=javascript:void(0); class="menu-item theme-switch" title=切换主题>
+<i class="fas fa-adjust fa-fw"></i></a></div></div></header><div class="search-dropdown desktop"><div id=search-dropdown-desktop></div></div><div class="search-dropdown mobile"><div id=search-dropdown-mobile></div></div><main class=main><div class=container><div class=toc id=toc-auto><h2 class=toc-title>目录</h2><div class=toc-content id=toc-content-auto></div></div><article class="page single"><h1 class="single-title animated flipInX">Concurrency Patterns In Go</h1><div class=post-meta><div class=post-meta-line><span class=post-author><a href=/ title=Author rel=" author" class=author><i class="fas fa-user-circle fa-fw"></i>马力神</a></span></div><div class=post-meta-line><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime=2021-01-10>2021-01-10</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 990 字&nbsp;
+<i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 5 分钟&nbsp;</div></div><div class="details toc" id=toc-static kept=true><div class="details-summary toc-title"><span>目录</span>
+<span><i class="details-icon fas fa-angle-right"></i></span></div><div class="details-content toc-content" id=toc-content-static><nav id=TableOfContents><ul><li><a href=#channel>channel</a></li><li><a href=#select>select</a></li><li><a href=#使用-channel-应该注意什么>使用 channel 应该注意什么</a></li><li><a href=#原子操作>原子操作</a><ul><li><a href=#spinning-cas-自旋锁>Spinning CAS 自旋锁</a></li><li><a href=#ticket-storage>Ticket Storage</a></li></ul></li><li><a href=#总结>总结</a></li></ul></nav></div></div><div class=content id=content><h1 id=什么是并发编程>什么是并发编程</h1><p>抛开具体的概念 (相信你已经熟知)，<strong>并发</strong> <code>concurrency</code> 是一种<strong>设计</strong>：</p><ul><li>将程序设计成一个包含许多独立过程的集合；</li><li>允许这些过程最终可以<strong>并行</strong> <code>parallel</code> 地去执行；</li></ul><blockquote><p>尽管 <em><strong>并发</strong></em> 并不要求必须同时运行，例如在单核 CPU 物理机上无法实现并行却可以依靠操作系统时间片轮转等调度来实现并发；
+并发是一种操作系统在时间维度的虚拟，即时分复用。</p></blockquote><ul><li>代码运行的结果总是相同，无论是以并行还是顺序的方式。</li></ul><h1 id=具体要求>具体要求</h1><ul><li>通过划分多个独立的任务来将代码以及数据分组</li><li>没有竞争条件<sup id=fnref:1><a href=#fn:1 class=footnote-ref role=doc-noteref>1</a></sup></li><li>没有死锁<sup id=fnref:2><a href=#fn:2 class=footnote-ref role=doc-noteref>2</a></sup></li><li>比常规的程序更有效，即执行更快</li></ul><h1 id=go如何并发>Go如何并发</h1><blockquote><p>Don&rsquo;t communicate by sharing memory; share memory by communicating. (R. Pike)</p></blockquote><p>不要通过共享内存来通信，这意味着不同的并发实体不应该通过遵守严格、容易出错的内存可见性和同步策略 (比如内存屏障<sup id=fnref:3><a href=#fn:3 class=footnote-ref role=doc-noteref>3</a></sup>)来进行通信 (这是可以做到的，但是会让情况变得复杂，而且由于数据竞争会造成不可预期的结果)。</p><p>应该通过通信来共享内存 (数据) : Go 使用了基于 CSP<sup id=fnref:4><a href=#fn:4 class=footnote-ref role=doc-noteref>4</a></sup> (Communicating Sequential Process，通信顺序程序) 的并发模型，goroutine 做为并发通信的实体，通过 channel 来实现数据共享。</p><blockquote><p>A send on a channel happens before the corresponding receive from that channel completes. (Golang Spec)</p></blockquote><p><code>happens before</code> 保证了一个 goroutine 对 channel 的写入对另一个 goroutine 的读取操作是可见的。这种一种简单的顺序传递模式，由于 goroutine 之间通过 channel 来共享对内存的引用 (通过拷贝)，所以没有修改共享内存，也就不需要 mutex 之类的同步操作。理想中的 Go 并发，应该没有共享空间，每个并发主体 goroutine 仅能看到自己拥有的内存部分。</p><h2 id=channel>channel</h2><ul><li>无缓冲通道</li></ul><p>向无缓冲通道发送和从无缓冲通道中读取都会被阻塞，知道发送方和接收方同时准备好，才得意继续运行，就像同一赛道上两个交接接力棒的运动员。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-go data-lang=go>	<span class=nx>ch</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>chan</span> <span class=kt>int</span><span class=p>)</span>
+	<span class=nx>ch</span> <span class=o>&lt;-</span> <span class=mi>10</span>
+
+<span class=err>$</span> <span class=nx>fatal</span> <span class=kt>error</span><span class=p>:</span> <span class=nx>all</span> <span class=nx>goroutines</span> <span class=nx>are</span> <span class=nx>asleep</span> <span class=o>-</span> <span class=nx>deadlock</span><span class=p>!</span>
+
+	<span class=nx>ch</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>chan</span> <span class=kt>int</span><span class=p>)</span>
+	<span class=o>&lt;-</span><span class=nx>ch</span>
+
+<span class=err>$</span> <span class=nx>fatal</span> <span class=kt>error</span><span class=p>:</span> <span class=nx>all</span> <span class=nx>goroutines</span> <span class=nx>are</span> <span class=nx>asleep</span> <span class=o>-</span> <span class=nx>deadlock</span><span class=p>!</span>
+
+	<span class=nx>ch</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>chan</span> <span class=kt>string</span><span class=p>)</span>
+	<span class=k>go</span> <span class=kd>func</span><span class=p>()</span> <span class=p>{</span>
+		<span class=nx>msg</span> <span class=o>:=</span> <span class=o>&lt;-</span><span class=nx>ch</span>
+		<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=nx>msg</span><span class=p>)</span>
+	<span class=p>}()</span>
+	<span class=nx>ch</span> <span class=o>&lt;-</span> <span class=s>&#34;hello world&#34;</span>
+
+<span class=err>$</span> <span class=nx>hello</span> <span class=nx>world</span>
+
+</code></pre></td></tr></table></div></div><ul><li>缓冲通道</li></ul><p>当缓冲区已满时向通道发送数据 或者 从通道读取数据时缓冲区为空 (没有数据就意味着阻塞，同样体现为，不使用 <code>make</code> 初始化一个通道，从此通道读取数据将导致程序永久阻塞 )，程序会阻塞，其余情况下可以继续运行。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-go data-lang=go>	<span class=nx>ch</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>chan</span> <span class=kt>int</span><span class=p>,</span> <span class=mi>2</span><span class=p>)</span>
+	<span class=nx>ch</span> <span class=o>&lt;-</span> <span class=mi>1</span>
+	<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;send 1 unblocking...&#34;</span><span class=p>)</span>
+	<span class=nx>ch</span> <span class=o>&lt;-</span> <span class=mi>2</span>
+	<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;send 2 unblocking...&#34;</span><span class=p>)</span>
+	<span class=nx>ch</span> <span class=o>&lt;-</span> <span class=mi>3</span>
+	<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;send 3 unblocking...&#34;</span><span class=p>)</span>
+	
+<span class=err>$</span> <span class=nx>send</span> <span class=mi>1</span> <span class=nx>unblocking</span><span class=o>...</span>
+<span class=err>$</span> <span class=nx>send</span> <span class=mi>2</span> <span class=nx>unblocking</span><span class=o>...</span>
+<span class=err>$</span> <span class=nx>fatal</span> <span class=kt>error</span><span class=p>:</span> <span class=nx>all</span> <span class=nx>goroutines</span> <span class=nx>are</span> <span class=nx>asleep</span> <span class=o>-</span> <span class=nx>deadlock</span><span class=p>!</span>
+</code></pre></td></tr></table></div></div><ul><li>已关闭通道</li></ul><p>使用 <code>close(ch chan)</code> 可以将通道 ch 关闭。</p><p>从已关闭通道读取，总能得到返回。第一个返回值是通道类型对应的零值，第二个返回值是一个 <code>boolean</code> 类型的 false，代表数据不可用，通道未关闭时其为 true 。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-go data-lang=go>	<span class=nx>ch</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>chan</span> <span class=kt>int</span><span class=p>)</span>
+	<span class=nb>close</span><span class=p>(</span><span class=nx>ch</span><span class=p>)</span>
+	<span class=k>for</span> <span class=nx>i</span> <span class=o>:=</span> <span class=mi>0</span><span class=p>;</span> <span class=nx>i</span> <span class=p>&lt;</span> <span class=mi>3</span><span class=p>;</span> <span class=nx>i</span><span class=o>++</span> <span class=p>{</span>
+		<span class=nx>val</span><span class=p>,</span> <span class=nx>ok</span> <span class=o>:=</span> <span class=o>&lt;-</span><span class=nx>ch</span>
+		<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=nx>val</span><span class=p>,</span> <span class=nx>ok</span><span class=p>)</span>
+	<span class=p>}</span>
+
+<span class=err>$</span> <span class=mi>0</span> <span class=kc>false</span>
+<span class=err>$</span> <span class=mi>0</span> <span class=kc>false</span>
+<span class=err>$</span> <span class=mi>0</span> <span class=kc>false</span>
+
+</code></pre></td></tr></table></div></div><p>向已关闭的通道发送数据，会引起运行时恐慌 <code>panic</code>：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-go data-lang=go>	<span class=nx>ch</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>chan</span> <span class=kt>int</span><span class=p>)</span>
+	<span class=nb>close</span><span class=p>(</span><span class=nx>ch</span><span class=p>)</span>
+	<span class=nx>ch</span> <span class=o>&lt;-</span> <span class=mi>1024</span>
+
+<span class=err>$</span> <span class=nx>panic</span><span class=p>:</span> <span class=nx>send</span> <span class=nx>on</span> <span class=nx>closed</span> <span class=nx>channel</span>
+
+</code></pre></td></tr></table></div></div><h2 id=select>select</h2><p>select 的语法结构和 switch 很像，不过它是专门用来进行通道的接收、发送操作的。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-go data-lang=go>	<span class=nx>ch</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>chan</span> <span class=kt>int</span><span class=p>)</span>
+	<span class=k>select</span> <span class=p>{</span>
+	<span class=k>case</span> <span class=o>&lt;-</span><span class=nx>ch</span><span class=p>:</span>
+	<span class=p>}</span>
+
+<span class=c1>// 此代码会永久阻塞
+</span><span class=c1></span><span class=err>$</span> <span class=nx>fatal</span> <span class=kt>error</span><span class=p>:</span> <span class=nx>all</span> <span class=nx>goroutines</span> <span class=nx>are</span> <span class=nx>asleep</span> <span class=o>-</span> <span class=nx>deadlock</span><span class=p>!</span>
+</code></pre></td></tr></table></div></div><p>select 会在某个 case 的通道收发操作准备好时进入分支执行，当没有任何一个分支准备好时，程序会阻塞并等待。当有多个分支同时准备好时，会随机选择一个分支执行，注意，执行顺序并非按照书写 case 的顺序，此机制可以防止饥饿。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-go data-lang=go>	<span class=nx>ch</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>chan</span> <span class=kt>int</span><span class=p>,</span> <span class=mi>5</span><span class=p>)</span>
+	<span class=nx>done</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>chan</span> <span class=kd>struct</span><span class=p>{})</span>
+	<span class=k>defer</span> <span class=nb>close</span><span class=p>(</span><span class=nx>ch</span><span class=p>)</span>
+	<span class=k>go</span> <span class=kd>func</span><span class=p>()</span> <span class=p>{</span>
+		<span class=k>for</span> <span class=p>{</span>
+			<span class=k>select</span> <span class=p>{</span>
+			<span class=k>case</span> <span class=o>&lt;-</span><span class=nx>ch</span><span class=p>:</span>
+				<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;choose case a&#34;</span><span class=p>)</span>
+			<span class=k>case</span> <span class=o>&lt;-</span><span class=nx>ch</span><span class=p>:</span>
+				<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;choose case b&#34;</span><span class=p>)</span>
+			<span class=k>case</span> <span class=o>&lt;-</span><span class=nx>done</span><span class=p>:</span>
+				<span class=k>return</span>
+			<span class=p>}</span>
+		<span class=p>}</span>
+	<span class=p>}()</span>
+	<span class=k>for</span> <span class=nx>i</span> <span class=o>:=</span> <span class=mi>0</span><span class=p>;</span> <span class=nx>i</span> <span class=p>&lt;</span> <span class=mi>5</span><span class=p>;</span> <span class=nx>i</span><span class=o>++</span> <span class=p>{</span>
+		<span class=nx>ch</span> <span class=o>&lt;-</span> <span class=nx>i</span>
+	<span class=p>}</span>
+	<span class=nx>time</span><span class=p>.</span><span class=nf>Sleep</span><span class=p>(</span><span class=nx>time</span><span class=p>.</span><span class=nx>Second</span><span class=p>)</span>
+	<span class=nb>close</span><span class=p>(</span><span class=nx>done</span><span class=p>)</span>
+
+<span class=err>$</span> <span class=nx>choose</span> <span class=k>case</span> <span class=nx>b</span>
+<span class=err>$</span> <span class=nx>choose</span> <span class=k>case</span> <span class=nx>a</span>
+<span class=err>$</span> <span class=nx>choose</span> <span class=k>case</span> <span class=nx>b</span>
+<span class=err>$</span> <span class=nx>choose</span> <span class=k>case</span> <span class=nx>b</span>
+<span class=err>$</span> <span class=nx>choose</span> <span class=k>case</span> <span class=nx>a</span>
+
+</code></pre></td></tr></table></div></div><p>select 可以实现非阻塞通道收发操作，只需要添加一个 <code>default</code> 分支。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-go data-lang=go>	<span class=nx>ch</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>chan</span> <span class=kt>int</span><span class=p>)</span>
+	<span class=k>select</span> <span class=p>{</span>
+	<span class=k>case</span> <span class=o>&lt;-</span><span class=nx>ch</span><span class=p>:</span>
+	<span class=k>default</span><span class=p>:</span>
+		<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;enter default case&#34;</span><span class=p>)</span>
+	<span class=p>}</span>
+
+<span class=err>$</span> <span class=nx>enter</span> <span class=k>default</span> <span class=k>case</span>
+</code></pre></td></tr></table></div></div><h2 id=使用-channel-应该注意什么>使用 channel 应该注意什么</h2><ol><li>不要造成死锁。 channel 涉及很多阻塞，请确保各种通信方之间的顺序在掌控之中，否则可能造成死锁而无法推进。</li><li>数据在 channel 中传递同样是值拷贝，因此当传递一些大对象时，请考虑性能影响。</li><li>通过 channel 传递指针会打破不同并发主体之间的内存隔离，造成数据竞争，不要这样做。</li></ol><h2 id=原子操作>原子操作</h2><p>程序演进的三种类型:</p><ol><li>Blocking：程序可能进入时间未知的阻塞状态而无法推进 (make progress)，比如使用 mutex/lock。</li><li>Lock free：程序中至少有一部分 (一个或多个并发主体)总是在向前推进，通过不使用 mutex 而是 CAS (Compare And Swap) 来实现。</li><li>Wait free：程序中的每一个部分 (每一个并发主体)都能在有限的步骤或者时间内向前推进。有兴趣可以转向 <a href=https://www.codeproject.com/articles/43510/lock-free-single-producer-single-consumer-circular target=_blank rel="noopener noreffer">Lock-Free Single-Producer - Single Consumer Circular Queue</a>。</li></ol><p>接入来介绍几种借助 Go 的 atomic package 来实现的 lock free 并发模式。</p><h3 id=spinning-cas-自旋锁>Spinning CAS 自旋锁</h3><p>使用 CAS 实现最简单的自旋锁只需要两个东西：一个表示状态的变量以及一个表示 free 状态的常量。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-go data-lang=go><span class=kd>const</span> <span class=nx>free</span> <span class=p>=</span> <span class=nb>int32</span><span class=p>(</span><span class=mi>0</span><span class=p>)</span> <span class=c1>// 定义无争用状态
+</span><span class=c1></span>
+<span class=kd>type</span> <span class=nx>Spinlock</span> <span class=kd>struct</span> <span class=p>{</span>
+	<span class=nx>state</span> <span class=kt>int32</span>
+<span class=p>}</span>
+
+<span class=kd>func</span> <span class=p>(</span><span class=nx>sl</span> <span class=o>*</span><span class=nx>Spinlock</span><span class=p>)</span> <span class=nf>Lock</span><span class=p>()</span> <span class=p>{</span>
+  <span class=k>for</span> <span class=p>!</span><span class=nx>atomic</span><span class=p>.</span><span class=nf>CompareAndSwapInt32</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>sl</span><span class=p>.</span><span class=nx>state</span><span class=p>,</span> <span class=nx>free</span><span class=p>,</span> <span class=mi>1</span><span class=p>)</span> <span class=p>{</span> <span class=c1>// 1可以是任何不等于 free(0) 的值
+</span><span class=c1></span>		<span class=nx>runtime</span><span class=p>.</span><span class=nf>Gosched</span><span class=p>()</span> <span class=c1>// 主动让出cpu，此操作不会导致当前协程挂起，其会自动恢复运行
+</span><span class=c1></span>	<span class=p>}</span>
+<span class=p>}</span>
+
+<span class=kd>func</span> <span class=p>(</span><span class=nx>sl</span> <span class=o>*</span><span class=nx>Spinlock</span><span class=p>)</span> <span class=nf>Unlock</span><span class=p>()</span> <span class=p>{</span>
+	<span class=nx>atomic</span><span class=p>.</span><span class=nf>StoreInt32</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>sl</span><span class=p>.</span><span class=nx>state</span><span class=p>,</span> <span class=nx>free</span><span class=p>)</span>
+<span class=p>}</span>
+</code></pre></td></tr></table></div></div><p>以上就是一个简单的自旋锁的实现，来看一下实现的效果。</p><p>下面的这段代码在没有使用任何锁的情况下，可能会导致最终的结果不为0，用例少时可能观察不出来，我们让它运行在一个较大的循环。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
+	<span class=nx>passed</span> <span class=o>:=</span> <span class=mi>0</span>
+	<span class=k>for</span> <span class=nx>i</span> <span class=o>:=</span> <span class=mi>0</span><span class=p>;</span> <span class=nx>i</span> <span class=p>&lt;</span> <span class=mi>1000000</span><span class=p>;</span> <span class=nx>i</span><span class=o>++</span> <span class=p>{</span>
+		<span class=nx>man</span> <span class=o>:=</span> <span class=o>&amp;</span><span class=nx>Man</span><span class=p>{}</span>
+		<span class=nx>wg</span> <span class=o>:=</span> <span class=nx>sync</span><span class=p>.</span><span class=nx>WaitGroup</span><span class=p>{}</span>
+		<span class=nx>wg</span><span class=p>.</span><span class=nf>Add</span><span class=p>(</span><span class=mi>2</span><span class=p>)</span>
+		<span class=k>go</span> <span class=kd>func</span><span class=p>()</span> <span class=p>{</span>
+			<span class=k>defer</span> <span class=nx>wg</span><span class=p>.</span><span class=nf>Done</span><span class=p>()</span>
+			<span class=nx>man</span><span class=p>.</span><span class=nf>DecrMoney</span><span class=p>()</span> <span class=c1>// 对金额减1
+</span><span class=c1></span>		<span class=p>}()</span>
+		<span class=k>go</span> <span class=kd>func</span><span class=p>()</span> <span class=p>{</span>
+			<span class=k>defer</span> <span class=nx>wg</span><span class=p>.</span><span class=nf>Done</span><span class=p>()</span>
+			<span class=nx>man</span><span class=p>.</span><span class=nf>IncrMoney</span><span class=p>()</span> <span class=c1>// 对金额加1
+</span><span class=c1></span>		<span class=p>}()</span>
+		<span class=nx>wg</span><span class=p>.</span><span class=nf>Wait</span><span class=p>()</span>
+    <span class=c1>// 此时预期的 man.money 值应该为0
+</span><span class=c1></span>		<span class=k>if</span> <span class=nx>man</span><span class=p>.</span><span class=nx>money</span> <span class=o>!=</span> <span class=mi>0</span> <span class=p>{</span>
+			<span class=nx>fmt</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;passedStep: %d\nunexpeted man&#39;s money：%d&#34;</span><span class=p>,</span> <span class=nx>passed</span><span class=p>,</span> <span class=nx>man</span><span class=p>.</span><span class=nx>money</span><span class=p>)</span>
+			<span class=k>return</span>
+		<span class=p>}</span>
+		<span class=nx>passed</span><span class=o>++</span>
+	<span class=p>}</span>
+	<span class=nx>fmt</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;all cases pass：%d&#34;</span><span class=p>,</span> <span class=nx>passed</span><span class=p>)</span>
+<span class=p>}</span>
+
+<span class=kd>type</span> <span class=nx>Man</span> <span class=kd>struct</span> <span class=p>{</span>
+	<span class=nx>Spinlock</span>
+	<span class=nx>money</span> <span class=kt>int</span>
+<span class=p>}</span>
+
+<span class=kd>func</span> <span class=p>(</span><span class=nx>m</span> <span class=o>*</span><span class=nx>Man</span><span class=p>)</span> <span class=nf>DecrMoney</span><span class=p>()</span> <span class=p>{</span>
+	<span class=c1>// m.Lock()
+</span><span class=c1></span>	<span class=nx>m</span><span class=p>.</span><span class=nx>money</span> <span class=o>-=</span> <span class=mi>1</span>
+	<span class=c1>// m.Unlock()
+</span><span class=c1></span><span class=p>}</span>
+
+<span class=kd>func</span> <span class=p>(</span><span class=nx>m</span> <span class=o>*</span><span class=nx>Man</span><span class=p>)</span> <span class=nf>IncrMoney</span><span class=p>()</span> <span class=p>{</span>
+	<span class=c1>// m.Lock()
+</span><span class=c1></span>	<span class=nx>m</span><span class=p>.</span><span class=nx>money</span> <span class=o>+=</span> <span class=mi>1</span>
+	<span class=c1>// m.Unlock()
+</span><span class=c1></span><span class=p>}</span>
+</code></pre></td></tr></table></div></div><p>使用 -race 选项启用 Go 的 data race 检测，此时的输出很有可能是：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-shell data-lang=shell>$ go run -race main.go
+
+<span class=c1># 输出</span>
+$ WARNING: DATA RACE
+$ Read at 0x00c00001c0a8 by goroutine 8:
+$  main.<span class=o>(</span>*Man<span class=o>)</span>.IncrMoney<span class=o>()</span>
+$      /Users/malishen/go/src/awesomeProject/main.go:48 +0x7b
+$  main.main.func2<span class=o>()</span>
+$      /Users/malishen/go/src/awesomeProject/main.go:23 +0x69
+...
+
+$ passedStep: <span class=m>23517</span>
+$ unexpeted man<span class=err>&#39;</span>s money：1
+$ Process finished with <span class=nb>exit</span> code <span class=m>1</span>
+
+</code></pre></td></tr></table></div></div><p>当启动 Spinlock 后：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>m</span> <span class=o>*</span><span class=nx>Man</span><span class=p>)</span> <span class=nf>DecrMoney</span><span class=p>()</span> <span class=p>{</span>
+	<span class=nx>m</span><span class=p>.</span><span class=nf>Lock</span><span class=p>()</span>
+	<span class=nx>m</span><span class=p>.</span><span class=nx>money</span> <span class=o>-=</span> <span class=mi>1</span>
+	<span class=nx>m</span><span class=p>.</span><span class=nf>Unlock</span><span class=p>()</span>
+<span class=p>}</span>
+
+<span class=kd>func</span> <span class=p>(</span><span class=nx>m</span> <span class=o>*</span><span class=nx>Man</span><span class=p>)</span> <span class=nf>IncrMoney</span><span class=p>()</span> <span class=p>{</span>
+	<span class=nx>m</span><span class=p>.</span><span class=nf>Lock</span><span class=p>()</span>
+	<span class=nx>m</span><span class=p>.</span><span class=nx>money</span> <span class=o>+=</span> <span class=mi>1</span>
+	<span class=nx>m</span><span class=p>.</span><span class=nf>Unlock</span><span class=p>()</span>
+<span class=p>}</span>
+</code></pre></td></tr></table></div></div><p>此时的结果无论循环变量 i 设置多大，结果都是：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-shell data-lang=shell>$ go run -race main.go
+
+<span class=c1># 输出,没有 data race</span>
+$ all cases pass：1000000
+</code></pre></td></tr></table></div></div><h3 id=ticket-storage>Ticket Storage</h3><p>再来使用 CAS 实现一个 lock free 的本地存储，并且具有先到先得的顺序公平性，需要一个线性的结构以及一个 ticket 变量和 done 变量。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-go data-lang=go><span class=kd>type</span> <span class=nx>TicketStorage</span> <span class=kd>struct</span> <span class=p>{</span>
+	<span class=nx>ticket</span> <span class=kt>uint64</span> <span class=c1>// 任务号，只增不减
+</span><span class=c1></span>	<span class=nx>done</span>   <span class=kt>uint64</span> <span class=c1>// 已经完成的任务
+</span><span class=c1></span>	<span class=nx>slots</span>  <span class=p>[]</span><span class=kt>string</span> <span class=c1>// 为了简单，这里想象成是无限容量的
+</span><span class=c1></span><span class=p>}</span>
+
+<span class=kd>func</span> <span class=p>(</span><span class=nx>ts</span> <span class=o>*</span><span class=nx>TicketStorage</span><span class=p>)</span> <span class=nf>Put</span><span class=p>(</span><span class=nx>msg</span> <span class=kt>string</span><span class=p>)</span> <span class=p>{</span>
+	<span class=nx>t</span> <span class=o>:=</span> <span class=nx>atomic</span><span class=p>.</span><span class=nf>AddUint64</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>ts</span><span class=p>.</span><span class=nx>ticket</span><span class=p>,</span> <span class=mi>1</span><span class=p>)</span> <span class=o>-</span> <span class=mi>1</span> <span class=c1>// 减1是获取到的ticket对应的slots下标
+</span><span class=c1></span>	<span class=nx>ts</span><span class=p>.</span><span class=nx>slots</span><span class=p>[</span><span class=nx>t</span><span class=p>]</span> <span class=p>=</span> <span class=nx>msg</span>
+	<span class=k>for</span> <span class=p>!</span><span class=nx>atomic</span><span class=p>.</span><span class=nf>CompareAndSwapUint64</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>ts</span><span class=p>.</span><span class=nx>done</span><span class=p>,</span> <span class=nx>t</span><span class=p>,</span> <span class=nx>t</span><span class=o>+</span><span class=mi>1</span><span class=p>)</span> <span class=p>{</span>
+		<span class=nx>runtime</span><span class=p>.</span><span class=nf>Gosched</span><span class=p>()</span>
+	<span class=p>}</span>
+<span class=p>}</span>
+
+<span class=kd>func</span> <span class=p>(</span><span class=nx>ts</span> <span class=o>*</span><span class=nx>TicketStorage</span><span class=p>)</span> <span class=nf>GetDone</span><span class=p>()</span> <span class=p>[]</span><span class=kt>string</span> <span class=p>{</span>
+	<span class=k>return</span> <span class=nx>ts</span><span class=p>.</span><span class=nx>slots</span><span class=p>[:</span><span class=nx>atomic</span><span class=p>.</span><span class=nf>LoadUint64</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>ts</span><span class=p>.</span><span class=nx>done</span><span class=p>)</span><span class=o>+</span><span class=mi>1</span><span class=p>]</span>
+<span class=p>}</span>
+</code></pre></td></tr></table></div></div><blockquote><p>Note：上面这个 demo 仅仅是一个并发设计模式的演示，由于 slots 其实并不是一个无限容量的切片，所以此代码是无法直接运行的。</p></blockquote><p>总结一下，这个 Ticket Storage 在 <code>Put()</code> 时，ticket 原子地单调递增，所以其是全局唯一的，从而保证在对 slots 相应索引赋值时没有 data race。类似于很多人去银行排队办理业务，银行只有一个窗口，所以每个人可以先取一个号，等叫到号了才可以去办理业务。这个模式的最大特点是对于 <code>GetDone()</code>的读取操作，是 wait free 的，可以仔细体会一下。</p><h2 id=总结>总结</h2><p>CSP 是 Go 并发理论的基石，Go 向开发者提供了强大的轻量级线程 goroutine 和 通道 channel 让并发编程变得简单、高效，但是这种简单性意味着难以深入掌握，在这里给出几个建议：</p><ul><li><p>避免阻塞，避免数据竞争 data race；</p></li><li><p>使用 channel 进行通信而不是直接共享内存，使用 select 去管理 channel，channel 应该由创建者/发送方决定何时关闭；</p></li><li><p>当某些场景 channel 无法很好地帮助你时：</p><ul><li>优先使用 sync 并发工具包；</li><li>在简单情况下或者确实需要时，尝试使用 atomic 写出 lock free 的代码。</li></ul></li></ul><h1 id=参考资料>参考资料</h1><ol><li>《 Go 语言设计与实现》<a href=https://draveness.me/golang/docs/part2-foundation/ch05-keyword/golang-select/>https://draveness.me/golang/docs/part2-foundation/ch05-keyword/golang-select/</a></li><li>深入golang之&mdash;goroutine并发控制与通信, 知乎 <a href=https://zhuanlan.zhihu.com/p/36907022>https://zhuanlan.zhihu.com/p/36907022</a></li><li>Share Memory By Communicating, The Go Blog <a href=https://blog.golang.org/codelab-share>https://blog.golang.org/codelab-share</a></li><li>为什么使用通信来共享内存 <a href=https://draveness.me/whys-the-design-communication-shared-memory/>https://draveness.me/whys-the-design-communication-shared-memory/</a></li></ol><section class=footnotes role=doc-endnotes><hr><ol><li id=fn:1 role=doc-endnote><p>数据竞争 <a href=https://zh.wikipedia.org/wiki/%E7%AB%B6%E7%88%AD%E5%8D%B1%E5%AE%B3>https://zh.wikipedia.org/wiki/%E7%AB%B6%E7%88%AD%E5%8D%B1%E5%AE%B3</a> <a href=#fnref:1 class=footnote-backref role=doc-backlink>&#8617;&#xfe0e;</a></p></li><li id=fn:2 role=doc-endnote><p>死锁 <a href=https://zh.wikipedia.org/wiki/%E7%AB%B6%E7%88%AD%E5%8D%B1%E5%AE%B3>https://zh.wikipedia.org/wiki/%E7%AB%B6%E7%88%AD%E5%8D%B1%E5%AE%B3</a> <a href=#fnref:2 class=footnote-backref role=doc-backlink>&#8617;&#xfe0e;</a></p></li><li id=fn:3 role=doc-endnote><p>内存屏障 <a href=https://zh.wikipedia.org/wiki/%E5%86%85%E5%AD%98%E5%B1%8F%E9%9A%9C>https://zh.wikipedia.org/wiki/%E5%86%85%E5%AD%98%E5%B1%8F%E9%9A%9C</a> <a href=#fnref:3 class=footnote-backref role=doc-backlink>&#8617;&#xfe0e;</a></p></li><li id=fn:4 role=doc-endnote><p>CSP <a href=https://zh.wikipedia.org/wiki/%E4%BA%A4%E8%AB%87%E5%BE%AA%E5%BA%8F%E7%A8%8B%E5%BC%8F>https://zh.wikipedia.org/wiki/%E4%BA%A4%E8%AB%87%E5%BE%AA%E5%BA%8F%E7%A8%8B%E5%BC%8F</a> <a href=#fnref:4 class=footnote-backref role=doc-backlink>&#8617;&#xfe0e;</a></p></li></ol></section></div><div class=post-footer id=post-footer><div class=post-info><div class=post-info-line><div class=post-info-mod><span>更新于 2021-01-10</span></div><div class=post-info-license></div></div><div class=post-info-line><div class=post-info-md></div><div class=post-info-share><span><a href=javascript:void(0); title="分享到 Twitter" data-sharer=twitter data-url=http://example.org/concurrency/ data-title="Concurrency Patterns In Go"><i class="fab fa-twitter fa-fw"></i></a><a href=javascript:void(0); title="分享到 Facebook" data-sharer=facebook data-url=http://example.org/concurrency/><i class="fab fa-facebook-square fa-fw"></i></a><a href=javascript:void(0); title="分享到 WhatsApp" data-sharer=whatsapp data-url=http://example.org/concurrency/ data-title="Concurrency Patterns In Go" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href=javascript:void(0); title="分享到 Line" data-sharer=line data-url=http://example.org/concurrency/ data-title="Concurrency Patterns In Go"><i data-svg-src=/lib/simple-icons/icons/line.min.svg></i></a><a href=javascript:void(0); title="分享到 微博" data-sharer=weibo data-url=http://example.org/concurrency/ data-title="Concurrency Patterns In Go"><i class="fab fa-weibo fa-fw"></i></a><a href=javascript:void(0); title="分享到 Myspace" data-sharer=myspace data-url=http://example.org/concurrency/ data-title="Concurrency Patterns In Go" data-description><i data-svg-src=/lib/simple-icons/icons/myspace.min.svg></i></a><a href=javascript:void(0); title="分享到 Blogger" data-sharer=blogger data-url=http://example.org/concurrency/ data-title="Concurrency Patterns In Go" data-description><i class="fab fa-blogger fa-fw"></i></a><a href=javascript:void(0); title="分享到 Evernote" data-sharer=evernote data-url=http://example.org/concurrency/ data-title="Concurrency Patterns In Go"><i class="fab fa-evernote fa-fw"></i></a></span></div></div></div><div class=post-info-more><section class=post-tags></section><section><span><a href=javascript:void(0); onclick=window.history.back()>返回</a></span>&nbsp;|&nbsp;<span><a href=/>主页</a></span></section></div><div class=post-nav></div></div><div id=comments></div></article></div></main><footer class=footer><div class=footer-container><div class=footer-line>由 <a href=https://gohugo.io/ target=_blank rel="noopener noreffer" title="Hugo 0.82.0">Hugo</a> 强力驱动 | 主题 - <a href=https://github.com/dillonzq/LoveIt target=_blank rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a></div><div class=footer-line><i class="far fa-copyright fa-fw"></i><span itemprop=copyrightYear>2021</span><span class=author itemprop=copyrightHolder>&nbsp;<a href=/ target=_blank>马力神</a></span>&nbsp;|&nbsp;<span class=license><a rel="license external nofollow noopener noreffer" href=https://creativecommons.org/licenses/by-nc/4.0/ target=_blank>CC BY-NC 4.0</a></span></div></div></footer></div><div id=fixed-buttons><a href=# id=back-to-top class=fixed-button title=回到顶部><i class="fas fa-arrow-up fa-fw"></i>
+</a><a href=# id=view-comments class=fixed-button title=查看评论><i class="fas fa-comment fa-fw"></i></a></div><link rel=stylesheet href=/lib/katex/katex.min.css><link rel=stylesheet href=/lib/katex/copy-tex.min.css><link rel=stylesheet href=/lib/cookieconsent/cookieconsent.min.css><script type=text/javascript src=/lib/smooth-scroll/smooth-scroll.min.js></script><script type=text/javascript src=/lib/autocomplete/autocomplete.min.js></script><script type=text/javascript src=/lib/lunr/lunr.min.js></script><script type=text/javascript src=/lib/lunr/lunr.stemmer.support.min.js></script><script type=text/javascript src=/lib/lunr/lunr.zh.min.js></script><script type=text/javascript src=/lib/lazysizes/lazysizes.min.js></script><script type=text/javascript src=/lib/clipboard/clipboard.min.js></script><script type=text/javascript src=/lib/sharer/sharer.min.js></script><script type=text/javascript src=/lib/katex/katex.min.js></script><script type=text/javascript src=/lib/katex/auto-render.min.js></script><script type=text/javascript src=/lib/katex/copy-tex.min.js></script><script type=text/javascript src=/lib/katex/mhchem.min.js></script><script type=text/javascript src=/lib/cookieconsent/cookieconsent.min.js></script><script type=text/javascript>window.config={code:{copyTitle:"复制到剪贴板",maxShownLines:10},comment:{},cookieconsent:{content:{dismiss:"同意",link:"了解更多",message:"本网站使用 Cookies 来改善您的浏览体验."},enable:!0,palette:{button:{background:"#f0f0f0"},popup:{background:"#1aa3ff"}},theme:"edgeless"},math:{delimiters:[{display:!0,left:"$$",right:"$$"},{display:!0,left:"\\[",right:"\\]"},{display:!1,left:"$",right:"$"},{display:!1,left:"\\(",right:"\\)"}],strict:!1},search:{highlightTag:"em",lunrIndexURL:"/index.json",lunrLanguageCode:"zh",lunrSegmentitURL:"/lib/lunr/lunr.segmentit.js",maxResultLength:10,noResultsFound:"没有找到结果",snippetLength:50,type:"lunr"}}</script><script type=text/javascript src=/js/theme.min.js></script></body></html>
