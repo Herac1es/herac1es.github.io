@@ -105,9 +105,9 @@ theme = "LoveIt"
     #  页面头部导航栏标题配置
     [params.header.title]
       # LOGO 的 URL
-      logo = ""
+      logo = "cat.png"
       # 标题名称
-      name = "Hugo"
+      name = "  Enjoy the process and forward the target."
       # 你可以在名称 (允许 HTML 格式) 之前添加其他信息, 例如图标
       pre = ""
       # 你可以在名称 (允许 HTML 格式) 之后添加其他信息, 例如图标
@@ -163,9 +163,9 @@ theme = "LoveIt"
       # 主页显示头像的 URL
       avatarURL = "heracles.jpeg"
       #  主页显示的网站标题 (支持 HTML 格式)
-      title = ""
+      title = "Heracles"
       # 主页显示的网站副标题
-      subtitle = "新手上路～"
+      subtitle = "Beijing China,back-end programing engineer(Golang)"
       # 是否为副标题显示打字机动画
       typeit = true
       # 是否显示社交账号
@@ -204,7 +204,7 @@ theme = "LoveIt"
 #    FreeCodeCamp = ""
 #    Bitbucket = ""
 #    Stackoverflow = ""
-    Weibo = ""
+#    Weibo = ""
 #    Odnoklassniki = ""
 #    VK = ""
 #    Flickr = ""
@@ -222,7 +222,7 @@ theme = "LoveIt"
 #    Hackernews = ""
 #    Kickstarter = ""
 #    Patreon = ""
-    Steam = ""
+#    Steam = ""
 #    Twitch = ""
 #    Strava = ""
 #    Skype = ""
@@ -245,7 +245,7 @@ theme = "LoveIt"
 #    Gitea = ""
 #    XMPP = ""
 #    Matrix = ""
-    Bilibili = ""
+#    Bilibili = ""
     Email = "1045772673@qq.com"
     RSS = true # 
 
@@ -315,10 +315,10 @@ theme = "LoveIt"
     #  文章页面的分享信息设置
     [params.page.share]
       enable = true
-      Twitter = true
-      Facebook = true
+      Twitter = false
+      Facebook = false
       Linkedin = false
-      Whatsapp = true
+      Whatsapp = false
       Pinterest = false
       Tumblr = false
       HackerNews = false
@@ -326,7 +326,7 @@ theme = "LoveIt"
       VK = false
       Buffer = false
       Xing = false
-      Line = true
+      Line = false
       Instapaper = false
       Pocket = false
       Digg = false
@@ -334,11 +334,11 @@ theme = "LoveIt"
       Flipboard = false
       Weibo = true
       Renren = false
-      Myspace = true
-      Blogger = true
-      Baidu = false
+      Myspace = false
+      Blogger = false
+      Baidu = true
       Odnoklassniki = false
-      Evernote = true
+      Evernote = false
       Skype = false
       Trello = false
       Mix = false

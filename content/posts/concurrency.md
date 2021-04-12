@@ -1,10 +1,12 @@
 ---
 title: "Concurrency Patterns In Go"
 date: 2021-01-10T23:27:01+08:00
+tags: ["concurrency", "Go"]
+categories: ["Go语言学习"]
 draft: false
 ---
 
-# 什么是并发编程
+## 什么是并发编程
 
 抛开具体的概念 (相信你已经熟知)，**并发** `concurrency` 是一种**设计**：
 
@@ -14,14 +16,14 @@ draft: false
 并发是一种操作系统在时间维度的虚拟，即时分复用。
 * 代码运行的结果总是相同，无论是以并行还是顺序的方式。
 
-# 具体要求
+## 具体要求
 
 * 通过划分多个独立的任务来将代码以及数据分组
 * 没有竞争条件[^1]
 * 没有死锁[^2]
 * 比常规的程序更有效，即执行更快
 
-# Go如何并发
+## Go如何并发
 
 >Don't communicate by sharing memory; share memory by communicating. (R. Pike)
 
@@ -32,7 +34,7 @@ draft: false
 
 `happens before` 保证了一个 goroutine 对 channel 的写入对另一个 goroutine 的读取操作是可见的。这种一种简单的顺序传递模式，由于 goroutine 之间通过 channel 来共享对内存的引用 (通过拷贝)，所以没有修改共享内存，也就不需要 mutex 之类的同步操作。理想中的 Go 并发，应该没有共享空间，每个并发主体 goroutine 仅能看到自己拥有的内存部分。
 
-## channel
+### channel
 
 * 无缓冲通道
 
@@ -109,7 +111,7 @@ $ panic: send on closed channel
 
 ```
 
-## select
+### select
 
 select 的语法结构和 switch 很像，不过它是专门用来进行通道的接收、发送操作的。
 
@@ -168,13 +170,13 @@ select 可以实现非阻塞通道收发操作，只需要添加一个 `default`
 $ enter default case
 ```
 
-## 使用 channel 应该注意什么
+### 使用 channel 应该注意什么
 
 1. 不要造成死锁。 channel 涉及很多阻塞，请确保各种通信方之间的顺序在掌控之中，否则可能造成死锁而无法推进。
 1. 数据在 channel 中传递同样是值拷贝，因此当传递一些大对象时，请考虑性能影响。
 1. 通过 channel 传递指针会打破不同并发主体之间的内存隔离，造成数据竞争，不要这样做。
 
-## 原子操作
+### 原子操作
 
 程序演进的三种类型:
 
@@ -184,7 +186,7 @@ $ enter default case
 
 接入来介绍几种借助 Go 的 atomic package 来实现的 lock free 并发模式。
 
-### Spinning CAS 自旋锁
+#### Spinning CAS 自旋锁
 
 使用 CAS 实现最简单的自旋锁只需要两个东西：一个表示状态的变量以及一个表示 free 状态的常量。
 
@@ -299,7 +301,7 @@ $ go run -race main.go
 $ all cases pass：1000000
 ```
 
-### Ticket Storage
+#### Ticket Storage
 
 再来使用 CAS 实现一个 lock free 的本地存储，并且具有先到先得的顺序公平性，需要一个线性的结构以及一个 ticket 变量和 done 变量。
 ```go
@@ -326,7 +328,7 @@ func (ts *TicketStorage) GetDone() []string {
 
 总结一下，这个 Ticket Storage 在 `Put()` 时，ticket 原子地单调递增，所以其是全局唯一的，从而保证在对 slots 相应索引赋值时没有 data race。类似于很多人去银行排队办理业务，银行只有一个窗口，所以每个人可以先取一个号，等叫到号了才可以去办理业务。这个模式的最大特点是对于 `GetDone()`的读取操作，是 wait free 的，可以仔细体会一下。
 
-## 总结
+### 总结
 
 CSP 是 Go 并发理论的基石，Go 向开发者提供了强大的轻量级线程 goroutine 和 通道 channel 让并发编程变得简单、高效，但是这种简单性意味着难以深入掌握，在这里给出几个建议：
 
@@ -347,8 +349,9 @@ CSP 是 Go 并发理论的基石，Go 向开发者提供了强大的轻量级线
 
 # 参考资料
 
+1. The Go Memory Model <https://golang.org/ref/mem>
 1. 《 Go 语言设计与实现》<https://draveness.me/golang/docs/part2-foundation/ch05-keyword/golang-select/>
-2. 深入golang之---goroutine并发控制与通信, 知乎 <https://zhuanlan.zhihu.com/p/36907022>
-3. Share Memory By Communicating, The Go Blog <https://blog.golang.org/codelab-share>
-4. 为什么使用通信来共享内存 <https://draveness.me/whys-the-design-communication-shared-memory/>
+1. 深入golang之---goroutine并发控制与通信, 知乎 <https://zhuanlan.zhihu.com/p/36907022>
+1. Share Memory By Communicating, The Go Blog <https://blog.golang.org/codelab-share>
+1. 为什么使用通信来共享内存 <https://draveness.me/whys-the-design-communication-shared-memory/>
 
