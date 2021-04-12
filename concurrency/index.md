@@ -336,11 +336,11 @@ CSP 是 Go 并发理论的基石，Go 向开发者提供了强大的轻量级线
 
 [^1]:数据竞争 <https://zh.wikipedia.org/wiki/%E7%AB%B6%E7%88%AD%E5%8D%B1%E5%AE%B3>
 
-[^2]: 死锁 <https://zh.wikipedia.org/wiki/%E7%AB%B6%E7%88%AD%E5%8D%B1%E5%AE%B3>
+[^2]: 死锁 <https://zhuanlan.zhihu.com/p/26945588>
 
 [^3]: 内存屏障 <https://zh.wikipedia.org/wiki/%E5%86%85%E5%AD%98%E5%B1%8F%E9%9A%9C>
 
-[^4]: CSP <https://zh.wikipedia.org/wiki/%E4%BA%A4%E8%AB%87%E5%BE%AA%E5%BA%8F%E7%A8%8B%E5%BC%8F>
+[^4]: CSP<https://zh.wikipedia.org/wiki/%E4%BA%A4%E8%AB%87%E5%BE%AA%E5%BA%8F%E7%A8%8B%E5%BC%8F>
 
 # 参考资料
 
@@ -348,3 +348,5 @@ CSP 是 Go 并发理论的基石，Go 向开发者提供了强大的轻量级线
 2. 深入golang之---goroutine并发控制与通信, 知乎 <https://zhuanlan.zhihu.com/p/36907022>
 3. Share Memory By Communicating, The Go Blog <https://blog.golang.org/codelab-share>
 4. 为什么使用通信来共享内存 <https://draveness.me/whys-the-design-communication-shared-memory/>
+
+
