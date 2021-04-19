@@ -105,7 +105,7 @@ theme = "LoveIt"
     #  页面头部导航栏标题配置
     [params.header.title]
       # LOGO 的 URL
-      logo = "cat.png"
+      logo = "/cat.png"
       # 标题名称
       name = "  Enjoy the process and forward the target."
       # 你可以在名称 (允许 HTML 格式) 之前添加其他信息, 例如图标
@@ -161,7 +161,7 @@ theme = "LoveIt"
       # Gravatar 邮箱，用于优先在主页显示的头像
       gravatarEmail = ""
       # 主页显示头像的 URL
-      avatarURL = "heracles.jpeg"
+      avatarURL = "/heracles.jpeg"
       #  主页显示的网站标题 (支持 HTML 格式)
       title = "Heracles"
       # 主页显示的网站副标题
