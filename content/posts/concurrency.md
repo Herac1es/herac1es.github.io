@@ -32,7 +32,7 @@ draft: false
 应该通过通信来共享内存 (数据) : Go 使用了基于 CSP[^4] (Communicating Sequential Process，通信顺序程序) 的并发模型，goroutine 做为并发通信的实体，通过 channel 来实现数据共享。
 > A send on a channel happens before the corresponding receive from that channel completes. (Golang Spec)
 
-`happens before` 保证了一个 goroutine 对 channel 的写入对另一个 goroutine 的读取操作是可见的。这种一种简单的顺序传递模式，由于 goroutine 之间通过 channel 来共享对内存的引用 (通过拷贝)，所以没有修改共享内存，也就不需要 mutex 之类的同步操作。理想中的 Go 并发，应该没有共享空间，每个并发主体 goroutine 仅能看到自己拥有的内存部分。
+`happens before` 保证了一个 goroutine 对 channel 的写入对另一个 goroutine 的读取操作是可见的。这是一种简单的顺序传递模式，由于 goroutine 之间通过 channel 来共享对内存的引用 (通过拷贝)，所以没有修改共享内存，也就不需要 mutex 之类的同步操作。理想中的 Go 并发，应该没有共享空间，每个并发主体 goroutine 仅能看到自己拥有的内存部分。
 
 ### channel
 
