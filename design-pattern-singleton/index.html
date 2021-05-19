@@ -1,0 +1,146 @@
+<!doctype html><html lang=zh-cn><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=robots content="noodp"><meta http-equiv=x-ua-compatible content="IE=edge, chrome=1"><title>设计模式-单例模式 - 马力神的博客</title><meta name=Description content><meta property="og:title" content="设计模式-单例模式"><meta property="og:description" content="单例模型 定义 单例（Singleton）模式的定义：指一个类只有一个实例，且该类能自行创建这个实例的一种模式。例如，Windows 中只能打开一个任务管理器，这样可以避免因打开多个任务管理器窗口而造成内存资源的浪费，或出现各个窗口显示内容的不一致等错误。
+在计算机系统中，还有 Windows 的回收站、操作系统中的文件系统、多线程中的线程池、显卡的驱动程序对象、打印机的后台处理服务、应用程序的日志对象、数据库的连接池、网站的计数器、Web 应用的配置对象、应用程序中的对话框、系统中的缓存等常常被设计成单例。
+单例模式在现实生活中的应用也非常广泛，例如公司 CEO、部门经理等都属于单例模型。J2EE 标准中的 ServletContext 和 ServletContextConfig、Spring框架应用中的 ApplicationContext、数据库中的连接池等也都是单例模式。
+单例模式有 3 个特点：
+ 单例类只有一个实例对象； 该单例对象必须由单例类自行创建； 单例类对外提供一个访问该单例的全局访问点。  优缺点 单例模式的优点：
+单例模式可以保证内存里只有一个实例，减少了内存的开销。 可以避免对资源的多重占用。 单例模式设置全局访问点，可以优化和共享资源的访问。 单例模式的缺点：
+单例模式一般没有接口，扩展困难。如果要扩展，则除了修改原来的代码，没有第二种途径，违背开闭原则。 在并发测试中，单例模式不利于代码调试。在调试过程中，如果单例中的代码没有执行完，也不能模拟生成一个新的对象。 单例模式的功能代码通常写在一个类中，如果功能设计不合理，则很容易违背单一职责原则。
+应用场景 单例模式的应用场景主要有以下几个方面:
+ 需要频繁创建的一些类，使用单例可以降低系统的内存压力，减少 GC。 某类只要求生成一个对象的时候，如一个班中的班长、每个人的身份证号等。 某些类创建实例时占用资源较多，或实例化耗时较长，且经常使用。 某类需要频繁实例化，而创建的对象又频繁被销毁的时候，如多线程的线程池、网络连接池等。 频繁访问数据库或文件的对象。 对于一些控制硬件级别的操作，或者从系统上来讲应当是单一控制逻辑的操作，如果有多个实例，则系统会完全乱套。 当对象需要被共享的场合。由于单例模式只允许创建一个对象，共享该对象可以节省内存，并加快对象访问速度。如 Web 中的配置对象、数据库的连接池等。  Go语言实现 单例对象定义:
+1 2 3  type Singleton struct { name string }    饿汉式  不管三七二十一，在程序启动时就创建好，故称 &ldquo;饿汉&rdquo;，简单粗暴。
+1 2 3 4 5 6 7 8 9 10  var singletonHungry *Singleton // 通过 go 的 init 函数侵入 func init() { singletonHungry = &Singleton{name: &#34;hungry&#34;} } func GetInstanceHungry() *Singleton { return singletonHungry }   懒汉式  与饿汉式不同，此时不在程序启动时创建，而是将初始化延迟到第一次使用的时候，即懒加载。"><meta property="og:type" content="article"><meta property="og:url" content="http://example.org/design-pattern-singleton/"><meta property="og:image" content="http://example.org/logo.png"><meta property="article:section" content="posts"><meta property="article:published_time" content="2021-05-19T20:14:40+08:00"><meta property="article:modified_time" content="2021-05-19T20:14:40+08:00"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content="http://example.org/logo.png"><meta name=twitter:title content="设计模式-单例模式"><meta name=twitter:description content="单例模型 定义 单例（Singleton）模式的定义：指一个类只有一个实例，且该类能自行创建这个实例的一种模式。例如，Windows 中只能打开一个任务管理器，这样可以避免因打开多个任务管理器窗口而造成内存资源的浪费，或出现各个窗口显示内容的不一致等错误。
+在计算机系统中，还有 Windows 的回收站、操作系统中的文件系统、多线程中的线程池、显卡的驱动程序对象、打印机的后台处理服务、应用程序的日志对象、数据库的连接池、网站的计数器、Web 应用的配置对象、应用程序中的对话框、系统中的缓存等常常被设计成单例。
+单例模式在现实生活中的应用也非常广泛，例如公司 CEO、部门经理等都属于单例模型。J2EE 标准中的 ServletContext 和 ServletContextConfig、Spring框架应用中的 ApplicationContext、数据库中的连接池等也都是单例模式。
+单例模式有 3 个特点：
+ 单例类只有一个实例对象； 该单例对象必须由单例类自行创建； 单例类对外提供一个访问该单例的全局访问点。  优缺点 单例模式的优点：
+单例模式可以保证内存里只有一个实例，减少了内存的开销。 可以避免对资源的多重占用。 单例模式设置全局访问点，可以优化和共享资源的访问。 单例模式的缺点：
+单例模式一般没有接口，扩展困难。如果要扩展，则除了修改原来的代码，没有第二种途径，违背开闭原则。 在并发测试中，单例模式不利于代码调试。在调试过程中，如果单例中的代码没有执行完，也不能模拟生成一个新的对象。 单例模式的功能代码通常写在一个类中，如果功能设计不合理，则很容易违背单一职责原则。
+应用场景 单例模式的应用场景主要有以下几个方面:
+ 需要频繁创建的一些类，使用单例可以降低系统的内存压力，减少 GC。 某类只要求生成一个对象的时候，如一个班中的班长、每个人的身份证号等。 某些类创建实例时占用资源较多，或实例化耗时较长，且经常使用。 某类需要频繁实例化，而创建的对象又频繁被销毁的时候，如多线程的线程池、网络连接池等。 频繁访问数据库或文件的对象。 对于一些控制硬件级别的操作，或者从系统上来讲应当是单一控制逻辑的操作，如果有多个实例，则系统会完全乱套。 当对象需要被共享的场合。由于单例模式只允许创建一个对象，共享该对象可以节省内存，并加快对象访问速度。如 Web 中的配置对象、数据库的连接池等。  Go语言实现 单例对象定义:
+1 2 3  type Singleton struct { name string }    饿汉式  不管三七二十一，在程序启动时就创建好，故称 &ldquo;饿汉&rdquo;，简单粗暴。
+1 2 3 4 5 6 7 8 9 10  var singletonHungry *Singleton // 通过 go 的 init 函数侵入 func init() { singletonHungry = &Singleton{name: &#34;hungry&#34;} } func GetInstanceHungry() *Singleton { return singletonHungry }   懒汉式  与饿汉式不同，此时不在程序启动时创建，而是将初始化延迟到第一次使用的时候，即懒加载。"><meta name=application-name content="LoveIt"><meta name=apple-mobile-web-app-title content="LoveIt"><meta name=theme-color content="#ffffff"><meta name=msapplication-TileColor content="#da532c"><link rel="shortcut icon" type=image/x-icon href=/favicon.ico><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=mask-icon href=/safari-pinned-tab.svg color=#5bbad5><link rel=manifest href=/site.webmanifest><link rel=canonical href=http://example.org/design-pattern-singleton/><link rel=prev href=http://example.org/gorm_20210419/><link rel=stylesheet href=/lib/normalize/normalize.min.css><link rel=stylesheet href=/css/style.min.css><link rel=stylesheet href=/lib/fontawesome-free/all.min.css><link rel=stylesheet href=/lib/animate/animate.min.css><script type=application/ld+json>{"@context":"http://schema.org","@type":"BlogPosting","headline":"设计模式-单例模式","inLanguage":"zh-CN","mainEntityOfPage":{"@type":"WebPage","@id":"http:\/\/example.org\/design-pattern-singleton\/"},"genre":"posts","keywords":"design pattern, Go","wordcount":239,"url":"http:\/\/example.org\/design-pattern-singleton\/","datePublished":"2021-05-19T20:14:40+08:00","dateModified":"2021-05-19T20:14:40+08:00","publisher":{"@type":"Organization","name":""},"author":{"@type":"Person","name":"马力神"},"description":""}</script></head><body header-desktop=fixed header-mobile=auto><script type=text/javascript>(window.localStorage&&localStorage.getItem('theme')?localStorage.getItem('theme')==='dark':'auto'==='auto'?window.matchMedia('(prefers-color-scheme: dark)').matches:'auto'==='dark')&&document.body.setAttribute('theme','dark')</script><div id=mask></div><div class=wrapper><header class=desktop id=header-desktop><div class=header-wrapper><div class=header-title><a href=/ title=马力神的博客><img class="lazyload logo" src=/svg/loading.min.svg data-src=/cat.png data-srcset="/cat.png, /cat.png 1.5x, /cat.png 2x" data-sizes=auto alt=/cat.png title=/cat.png> Enjoy the process and forward the target.</a></div><div class=menu><div class=menu-inner><a class=menu-item href=/posts/>文章 </a><a class=menu-item href=/tags/>标签 </a><a class=menu-item href=/categories/>分类 </a><span class="menu-item delimiter"></span><span class="menu-item search" id=search-desktop><input type=text placeholder=搜索文章标题或内容... id=search-input-desktop>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-desktop title=搜索><i class="fas fa-search fa-fw"></i></a>
+<a href=javascript:void(0); class="search-button search-clear" id=search-clear-desktop title=清空><i class="fas fa-times-circle fa-fw"></i></a>
+<span class="search-button search-loading" id=search-loading-desktop><i class="fas fa-spinner fa-fw fa-spin"></i></span>
+</span><a href=javascript:void(0); class="menu-item theme-switch" title=切换主题><i class="fas fa-adjust fa-fw"></i></a></div></div></div></header><header class=mobile id=header-mobile><div class=header-container><div class=header-wrapper><div class=header-title><a href=/ title=马力神的博客><img class="lazyload logo" src=/svg/loading.min.svg data-src=/cat.png data-srcset="/cat.png, /cat.png 1.5x, /cat.png 2x" data-sizes=auto alt=/cat.png title=/cat.png> Enjoy the process and forward the target.</a></div><div class=menu-toggle id=menu-toggle-mobile><span></span><span></span><span></span></div></div><div class=menu id=menu-mobile><div class=search-wrapper><div class="search mobile" id=search-mobile><input type=text placeholder=搜索文章标题或内容... id=search-input-mobile>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-mobile title=搜索><i class="fas fa-search fa-fw"></i></a>
+<a href=javascript:void(0); class="search-button search-clear" id=search-clear-mobile title=清空><i class="fas fa-times-circle fa-fw"></i></a>
+<span class="search-button search-loading" id=search-loading-mobile><i class="fas fa-spinner fa-fw fa-spin"></i></span></div><a href=javascript:void(0); class=search-cancel id=search-cancel-mobile>取消</a></div><a class=menu-item href=/posts/ title>文章</a><a class=menu-item href=/tags/ title>标签</a><a class=menu-item href=/categories/ title>分类</a><a href=javascript:void(0); class="menu-item theme-switch" title=切换主题>
+<i class="fas fa-adjust fa-fw"></i></a></div></div></header><div class="search-dropdown desktop"><div id=search-dropdown-desktop></div></div><div class="search-dropdown mobile"><div id=search-dropdown-mobile></div></div><main class=main><div class=container><div class=toc id=toc-auto><h2 class=toc-title>目录</h2><div class=toc-content id=toc-content-auto></div></div><article class="page single"><h1 class="single-title animated flipInX">设计模式-单例模式</h1><div class=post-meta><div class=post-meta-line><span class=post-author><a href=/ title=Author rel=" author" class=author><i class="fas fa-user-circle fa-fw"></i>马力神</a></span>&nbsp;<span class=post-category>收录于 <a href=/categories/go%E8%AF%AD%E8%A8%80%E5%AD%A6%E4%B9%A0/><i class="far fa-folder fa-fw"></i>Go语言学习</a>&nbsp;<a href=/categories/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/><i class="far fa-folder fa-fw"></i>设计模式学习笔记</a></span></div><div class=post-meta-line><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime=2021-05-19>2021-05-19</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 239 字&nbsp;
+<i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 2 分钟&nbsp;</div></div><div class="details toc" id=toc-static kept=true><div class="details-summary toc-title"><span>目录</span>
+<span><i class="details-icon fas fa-angle-right"></i></span></div><div class="details-content toc-content" id=toc-content-static><nav id=TableOfContents><ul><li><a href=#单例模型>单例模型</a><ul><li><a href=#定义>定义</a></li><li><a href=#优缺点>优缺点</a></li><li><a href=#应用场景>应用场景</a></li><li><a href=#go语言实现>Go语言实现</a></li><li><a href=#总结>总结</a></li></ul></li></ul></nav></div></div><div class=content id=content><h2 id=单例模型>单例模型</h2><h3 id=定义>定义</h3><p>单例（Singleton）模式的定义：指一个类只有一个实例，且该类能自行创建这个实例的一种模式。例如，Windows 中只能打开一个任务管理器，这样可以避免因打开多个任务管理器窗口而造成内存资源的浪费，或出现各个窗口显示内容的不一致等错误。</p><p>在计算机系统中，还有 Windows 的回收站、操作系统中的文件系统、多线程中的线程池、显卡的驱动程序对象、打印机的后台处理服务、应用程序的日志对象、数据库的连接池、网站的计数器、Web 应用的配置对象、应用程序中的对话框、系统中的缓存等常常被设计成单例。</p><p>单例模式在现实生活中的应用也非常广泛，例如公司 CEO、部门经理等都属于单例模型。J2EE 标准中的 ServletContext 和 ServletContextConfig、Spring框架应用中的 ApplicationContext、数据库中的连接池等也都是单例模式。</p><p>单例模式有 3 个特点：</p><ol><li>单例类只有一个实例对象；</li><li>该单例对象必须由单例类自行创建；</li><li>单例类对外提供一个访问该单例的全局访问点。</li></ol><h3 id=优缺点>优缺点</h3><p>单例模式的优点：</p><p>单例模式可以保证内存里只有一个实例，减少了内存的开销。
+可以避免对资源的多重占用。
+单例模式设置全局访问点，可以优化和共享资源的访问。
+单例模式的缺点：</p><p>单例模式一般没有接口，扩展困难。如果要扩展，则除了修改原来的代码，没有第二种途径，违背开闭原则。
+在并发测试中，单例模式不利于代码调试。在调试过程中，如果单例中的代码没有执行完，也不能模拟生成一个新的对象。
+单例模式的功能代码通常写在一个类中，如果功能设计不合理，则很容易违背单一职责原则。</p><h3 id=应用场景>应用场景</h3><p>单例模式的应用场景主要有以下几个方面:</p><ul><li>需要频繁创建的一些类，使用单例可以降低系统的内存压力，减少 GC。</li><li>某类只要求生成一个对象的时候，如一个班中的班长、每个人的身份证号等。</li><li>某些类创建实例时占用资源较多，或实例化耗时较长，且经常使用。</li><li>某类需要频繁实例化，而创建的对象又频繁被销毁的时候，如多线程的线程池、网络连接池等。</li><li>频繁访问数据库或文件的对象。</li><li>对于一些控制硬件级别的操作，或者从系统上来讲应当是单一控制逻辑的操作，如果有多个实例，则系统会完全乱套。</li><li>当对象需要被共享的场合。由于单例模式只允许创建一个对象，共享该对象可以节省内存，并加快对象访问速度。如 Web 中的配置对象、数据库的连接池等。</li></ul><h3 id=go语言实现>Go语言实现</h3><p>单例对象定义:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-go data-lang=go><span class=kd>type</span> <span class=nx>Singleton</span> <span class=kd>struct</span> <span class=p>{</span>
+	<span class=nx>name</span> <span class=kt>string</span>
+<span class=p>}</span>
+</code></pre></td></tr></table></div></div><ol><li>饿汉式</li></ol><p>不管三七二十一，在程序启动时就创建好，故称 &ldquo;饿汉&rdquo;，简单粗暴。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-go data-lang=go><span class=kd>var</span> <span class=nx>singletonHungry</span> <span class=o>*</span><span class=nx>Singleton</span>
+
+<span class=c1>// 通过 go 的 init 函数侵入
+</span><span class=c1></span><span class=kd>func</span> <span class=nf>init</span><span class=p>()</span> <span class=p>{</span>
+	<span class=nx>singletonHungry</span> <span class=p>=</span> <span class=o>&amp;</span><span class=nx>Singleton</span><span class=p>{</span><span class=nx>name</span><span class=p>:</span> <span class=s>&#34;hungry&#34;</span><span class=p>}</span>
+<span class=p>}</span>
+
+<span class=kd>func</span> <span class=nf>GetInstanceHungry</span><span class=p>()</span> <span class=o>*</span><span class=nx>Singleton</span> <span class=p>{</span>
+	<span class=k>return</span> <span class=nx>singletonHungry</span>
+<span class=p>}</span>
+</code></pre></td></tr></table></div></div><ol start=2><li>懒汉式</li></ol><p>与饿汉式不同，此时不在程序启动时创建，而是将初始化延迟到第一次使用的时候，即懒加载。</p><p>懒汉式经典实现方式：双重检测（需要加锁）</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-go data-lang=go><span class=kd>var</span> <span class=p>(</span>
+	<span class=nx>singletonLazy</span> <span class=o>*</span><span class=nx>Singleton</span>
+	<span class=nx>mutex</span> <span class=nx>sync</span><span class=p>.</span><span class=nx>Mutex</span>
+<span class=p>)</span>
+
+<span class=kd>func</span> <span class=nf>GetInstanceLazy</span><span class=p>()</span> <span class=o>*</span><span class=nx>Singleton</span> <span class=p>{</span>
+	<span class=k>if</span> <span class=nx>singletonLazy</span> <span class=o>==</span> <span class=kc>nil</span> <span class=p>{</span>
+		<span class=nx>mutex</span><span class=p>.</span><span class=nf>Lock</span><span class=p>()</span>
+		<span class=c1>// 再次判断的原因是并发情况下在外层判断为 nil 到获取锁这中间，可能已经被别的工作者初始化了
+</span><span class=c1></span>		<span class=k>if</span> <span class=nx>singletonLazy</span> <span class=o>==</span> <span class=kc>nil</span> <span class=p>{</span>
+			<span class=nx>singletonLazy</span> <span class=p>=</span> <span class=o>&amp;</span><span class=nx>Singleton</span><span class=p>{</span><span class=nx>name</span><span class=p>:</span> <span class=s>&#34;lazy&#34;</span><span class=p>}</span>
+		<span class=p>}</span>
+		<span class=nx>mutex</span><span class=p>.</span><span class=nf>Unlock</span><span class=p>()</span>
+	<span class=p>}</span>
+	<span class=k>return</span> <span class=nx>singletonLazy</span>
+<span class=p>}</span>
+</code></pre></td></tr></table></div></div><p>在这里给出一种使用 atomic 原子操作来实现的版本，类似于双重检测，但是不需要加 Mutex 重锁。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-go data-lang=go><span class=kd>var</span> <span class=p>(</span>
+	<span class=nx>singletonLazy</span> <span class=o>*</span><span class=nx>Singleton</span>
+	<span class=nx>epoch</span>         <span class=kt>int64</span>
+<span class=p>)</span>
+
+<span class=kd>func</span> <span class=nf>GetInstanceLazy</span><span class=p>()</span> <span class=o>*</span><span class=nx>Singleton</span> <span class=p>{</span>
+	<span class=k>if</span> <span class=nx>singletonLazy</span> <span class=o>==</span> <span class=kc>nil</span> <span class=o>&amp;&amp;</span> <span class=nx>atomic</span><span class=p>.</span><span class=nf>AddInt64</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>epoch</span><span class=p>,</span> <span class=mi>1</span><span class=p>)</span> <span class=o>==</span> <span class=mi>1</span> <span class=p>{</span>
+		<span class=nx>singletonLazy</span> <span class=p>=</span> <span class=o>&amp;</span><span class=nx>Singleton</span><span class=p>{</span><span class=nx>name</span><span class=p>:</span> <span class=s>&#34;lazy&#34;</span><span class=p>}</span>
+	<span class=p>}</span>
+	<span class=k>return</span> <span class=nx>singletonLazy</span>
+<span class=p>}</span>
+</code></pre></td></tr></table></div></div><p>最后一种懒汉式实现就是借助与 sync.Once 来保证初始化只执行一次。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre class=chroma><code class=language-go data-lang=go><span class=kd>var</span> <span class=p>(</span>
+	<span class=nx>singletonLazyII</span> <span class=o>*</span><span class=nx>Singleton</span>
+	<span class=nx>once</span>            <span class=nx>sync</span><span class=p>.</span><span class=nx>Once</span>
+<span class=p>)</span>
+
+<span class=kd>func</span> <span class=nf>GetInstanceLazyII</span><span class=p>()</span> <span class=o>*</span><span class=nx>Singleton</span> <span class=p>{</span>
+	<span class=k>if</span> <span class=nx>singletonLazyII</span> <span class=o>==</span> <span class=kc>nil</span> <span class=p>{</span>
+		<span class=nx>once</span><span class=p>.</span><span class=nf>Do</span><span class=p>(</span><span class=kd>func</span><span class=p>()</span> <span class=p>{</span>
+			<span class=nx>singletonLazyII</span> <span class=p>=</span> <span class=o>&amp;</span><span class=nx>Singleton</span><span class=p>{</span><span class=nx>name</span><span class=p>:</span> <span class=s>&#34;lazy II&#34;</span><span class=p>}</span>
+		<span class=p>})</span>
+	<span class=p>}</span>
+	<span class=k>return</span> <span class=nx>singletonLazyII</span>
+<span class=p>}</span>
+
+</code></pre></td></tr></table></div></div><h3 id=总结>总结</h3><p>单例模式应该是设计模式里常规并且容易理解的一种了，一般应用场景就是节省资源、创建全局的枚举对象或者重要资源的初始化（如基础库的全局默认对象）。
+谢谢观看～</p></div><div class=post-footer id=post-footer><div class=post-info><div class=post-info-line><div class=post-info-mod><span>更新于 2021-05-19</span></div><div class=post-info-license></div></div><div class=post-info-line><div class=post-info-md></div><div class=post-info-share><span><a href=javascript:void(0); title="分享到 微博" data-sharer=weibo data-url=http://example.org/design-pattern-singleton/ data-title=设计模式-单例模式><i class="fab fa-weibo fa-fw"></i></a><a href=javascript:void(0); title="分享到 百度" data-sharer=baidu data-url=http://example.org/design-pattern-singleton/ data-title=设计模式-单例模式><i data-svg-src=/lib/simple-icons/icons/baidu.min.svg></i></a></span></div></div></div><div class=post-info-more><section class=post-tags><i class="fas fa-tags fa-fw"></i>&nbsp;<a href=/tags/design-pattern/>design pattern</a>,&nbsp;<a href=/tags/go/>Go</a></section><section><span><a href=javascript:void(0); onclick=window.history.back()>返回</a></span>&nbsp;|&nbsp;<span><a href=/>主页</a></span></section></div><div class=post-nav><a href=/gorm_20210419/ class=prev rel=prev title="使用GORM IN查询的一个问题"><i class="fas fa-angle-left fa-fw"></i>使用GORM IN查询的一个问题</a></div></div><div id=comments></div></article></div></main><footer class=footer><div class=footer-container><div class=footer-line>由 <a href=https://gohugo.io/ target=_blank rel="noopener noreffer" title="Hugo 0.83.1">Hugo</a> 强力驱动 | 主题 - <a href=https://github.com/dillonzq/LoveIt target=_blank rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a></div><div class=footer-line><i class="far fa-copyright fa-fw"></i><span itemprop=copyrightYear>2021</span><span class=author itemprop=copyrightHolder>&nbsp;<a href=/ target=_blank>马力神</a></span>&nbsp;|&nbsp;<span class=license><a rel="license external nofollow noopener noreffer" href=https://creativecommons.org/licenses/by-nc/4.0/ target=_blank>CC BY-NC 4.0</a></span></div></div></footer></div><div id=fixed-buttons><a href=# id=back-to-top class=fixed-button title=回到顶部><i class="fas fa-arrow-up fa-fw"></i>
+</a><a href=# id=view-comments class=fixed-button title=查看评论><i class="fas fa-comment fa-fw"></i></a></div><link rel=stylesheet href=/lib/katex/katex.min.css><link rel=stylesheet href=/lib/katex/copy-tex.min.css><link rel=stylesheet href=/lib/cookieconsent/cookieconsent.min.css><script type=text/javascript src=/lib/smooth-scroll/smooth-scroll.min.js></script><script type=text/javascript src=/lib/autocomplete/autocomplete.min.js></script><script type=text/javascript src=/lib/lunr/lunr.min.js></script><script type=text/javascript src=/lib/lunr/lunr.stemmer.support.min.js></script><script type=text/javascript src=/lib/lunr/lunr.zh.min.js></script><script type=text/javascript src=/lib/lazysizes/lazysizes.min.js></script><script type=text/javascript src=/lib/clipboard/clipboard.min.js></script><script type=text/javascript src=/lib/sharer/sharer.min.js></script><script type=text/javascript src=/lib/katex/katex.min.js></script><script type=text/javascript src=/lib/katex/auto-render.min.js></script><script type=text/javascript src=/lib/katex/copy-tex.min.js></script><script type=text/javascript src=/lib/katex/mhchem.min.js></script><script type=text/javascript src=/lib/cookieconsent/cookieconsent.min.js></script><script type=text/javascript>window.config={code:{copyTitle:"复制到剪贴板",maxShownLines:10},comment:{},cookieconsent:{content:{dismiss:"同意",link:"了解更多",message:"本网站使用 Cookies 来改善您的浏览体验."},enable:!0,palette:{button:{background:"#f0f0f0"},popup:{background:"#1aa3ff"}},theme:"edgeless"},math:{delimiters:[{display:!0,left:"$$",right:"$$"},{display:!0,left:"\\[",right:"\\]"},{display:!1,left:"$",right:"$"},{display:!1,left:"\\(",right:"\\)"}],strict:!1},search:{highlightTag:"em",lunrIndexURL:"/index.json",lunrLanguageCode:"zh",lunrSegmentitURL:"/lib/lunr/lunr.segmentit.js",maxResultLength:10,noResultsFound:"没有找到结果",snippetLength:50,type:"lunr"}}</script><script type=text/javascript src=/js/theme.min.js></script></body></html>
